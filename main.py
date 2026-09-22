@@ -27,12 +27,10 @@ def connect_to_game():
         # Calculate the coordinate base address
         base_address = module_base + BASE_OFFSET
 
-        location_var.set("Connected to Cq.exe")
+        status_var.set("Connected to Cq.exe")
 
         # Enable controls
-        randomize_button.config(state=tk.NORMAL)
         apply_button.config(state=tk.NORMAL)
-        refresh_button.config(state=tk.NORMAL)
 
         return True
 
@@ -41,12 +39,10 @@ def connect_to_game():
         module_base = None
         base_address = None
 
-        location_var.set("Cq.exe not found - start the game and click Retry")
+        status_var.set("Cq.exe not found - start the game and click Retry")
 
         # Disable controls
-        randomize_button.config(state=tk.DISABLED)
         apply_button.config(state=tk.DISABLED)
-        refresh_button.config(state=tk.DISABLED)
 
         return False
 
@@ -82,17 +78,6 @@ def randomize_coordinates():
     z = random.uniform(0, 100)      
     return x, y, z
 
-def apply_randomized_coordinates():
-    """Randomize coordinates and write to memory after loading save file."""
-    position_address = follow_pointer_chain(base_address, offsets)
-    x, y, z = randomize_coordinates()
-
-    pm.write_float(position_address + position_offset_x, x)
-    pm.write_float(position_address + position_offset_y, y)
-    pm.write_float(position_address + position_offset_z, z)
-
-    refresh_location()
-
 def move_player(dx=0, dy=0, dz=0):
     """Move player by a delta offset in memory (dx, dy, dz)."""
     position_address = follow_pointer_chain(base_address, offsets)
@@ -109,8 +94,6 @@ def move_player(dx=0, dy=0, dz=0):
     pm.write_float(position_address + position_offset_y, new_y)
     pm.write_float(position_address + position_offset_z, new_z)
 
-    refresh_location()
-
 def apply_manual_coordinates():
     """Apply coordinates typed in manually to memory."""
     try:
@@ -123,47 +106,70 @@ def apply_manual_coordinates():
         pm.write_float(position_address + position_offset_y, y)
         pm.write_float(position_address + position_offset_z, z)
 
-        refresh_location()
     except ValueError:
-        location_var.set("Invalid number input")
+        status_var.set("Invalid number input")
 
-def refresh_location():
-    """Refreshes the displayed coordinates in the UI."""
 
-    if pm is None or base_address is None:
-        location_var.set("Cq.exe not connected")
-        return
+def update_live_location():
+    """Continuously reads the player's current coordinates."""
 
-    try:
-        position_address = follow_pointer_chain(base_address, offsets)
+    if pm is not None and base_address is not None:
+        try:
+            position_address = follow_pointer_chain(
+                base_address,
+                offsets
+            )
 
-        x = pm.read_float(position_address + position_offset_x)
-        y = pm.read_float(position_address + position_offset_y)
-        z = pm.read_float(position_address + position_offset_z)
+            x = pm.read_float(
+                position_address + position_offset_x
+            )
 
-        location_var.set(
-            f"Current Location: {x:.2f}, {y:.2f}, {z:.2f}"
+            y = pm.read_float(
+                position_address + position_offset_y
+            )
+
+            z = pm.read_float(
+                position_address + position_offset_z
+            )
+
+            live_location_var.set(
+                f"X: {x:.2f}    Y: {y:.2f}    Z: {z:.2f}"
+            )
+
+        except Exception as e:
+            live_location_var.set(
+                "Connection lost"
+            )
+
+    else:
+        live_location_var.set(
+            "Not connected"
         )
 
-        entry_x.delete(0, tk.END)
-        entry_y.delete(0, tk.END)
-        entry_z.delete(0, tk.END)
-
-        entry_x.insert(0, f"{x:.2f}")
-        entry_y.insert(0, f"{y:.2f}")
-        entry_z.insert(0, f"{z:.2f}")
-
-    except Exception as e:
-        location_var.set(f"Error: {e}")
+    # Run this function again in 100 milliseconds
+    root.after(100, update_live_location)
 
 # GUI Setup
 root = tk.Tk()
 root.title("Mall Player Coordinate Editor")
 root.geometry("400x400")
 
-location_var = tk.StringVar()
-location_label = tk.Label(root, textvariable=location_var)
-location_label.pack(pady=10)
+status_var = tk.StringVar()
+status_var.set("Not connected")
+
+status_label = tk.Label(
+    root,
+    textvariable=status_var
+)
+
+status_label.pack(pady=5)
+
+live_location_var = tk.StringVar()
+live_location_var.set("Not connected")
+
+live_location_label = tk.Label(root, textvariable=live_location_var)
+
+live_location_label.pack(pady=5)
 
 frame = tk.Frame(root)
 frame.pack(pady=5)
@@ -184,14 +190,9 @@ entry_z = tk.Entry(frame, width=10)
 entry_z.grid(row=2, column=1, padx=5)
 
 # Buttons
-randomize_button = tk.Button(root, text="Randomize Coordinates", command=apply_randomized_coordinates)
-randomize_button.pack(pady=5)
 
 apply_button = tk.Button(root, text="Apply Coordinates", command=apply_manual_coordinates)
 apply_button.pack(pady=5)
-
-refresh_button = tk.Button(root, text="Refresh", command=refresh_location)
-refresh_button.pack(pady=5)
 
 retry_button = tk.Button(root, text="Retry Connection",command=connect_to_game)
 retry_button.pack(pady=5)
@@ -201,24 +202,28 @@ controls_frame = tk.Frame(root)
 controls_frame.pack(pady=10)
 
 #Up
-tk.Button(controls_frame, text="^ (1)", command=lambda: move_player(0, +1, 0)).grid(row=1, column=2)
-tk.Button(controls_frame, text="^ (5)", command=lambda: move_player(0, +5, 0)).grid(row=1, column=3)
-tk.Button(controls_frame, text="^ (10)", command=lambda: move_player(0, +10, 0)).grid(row=1, column=4)
+tk.Button(controls_frame, text="↑ (1)", command=lambda: move_player(0, +1, 0)).grid(row=1, column=2)
+tk.Button(controls_frame, text="↑ (5)", command=lambda: move_player(0, +5, 0)).grid(row=1, column=3)
+tk.Button(controls_frame, text="↑ (10)", command=lambda: move_player(0, +10, 0)).grid(row=1, column=4)
 
 #Left
-tk.Button(controls_frame, text="<- (1)", command=lambda: move_player(-1, 0, 0)).grid(row=2, column=2)
-tk.Button(controls_frame, text="<- (5)", command=lambda: move_player(-5, 0, 0)).grid(row=2, column=1)
-tk.Button(controls_frame, text="<- (10)", command=lambda: move_player(-10, 0, 0)).grid(row=2, column=0)
+tk.Button(controls_frame, text="← (1)", command=lambda: move_player(-1, 0, 0)).grid(row=2, column=2)
+tk.Button(controls_frame, text="← (5)", command=lambda: move_player(-5, 0, 0)).grid(row=2, column=1)
+tk.Button(controls_frame, text="← (10)", command=lambda: move_player(-10, 0, 0)).grid(row=2, column=0)
 
 #Right
-tk.Button(controls_frame, text="-> (1)", command=lambda: move_player(+1, 0, 0)).grid(row=2, column=4)
-tk.Button(controls_frame, text="-> (5)", command=lambda: move_player(+5, 0, 0)).grid(row=2, column=5)
-tk.Button(controls_frame, text="-> (10)", command=lambda: move_player(+10, 0, 0)).grid(row=2, column=6)
+tk.Button(controls_frame, text="→ (1)", command=lambda: move_player(+1, 0, 0)).grid(row=2, column=4)
+tk.Button(controls_frame, text="→ (5)", command=lambda: move_player(+5, 0, 0)).grid(row=2, column=5)
+tk.Button(controls_frame, text="→ (10)", command=lambda: move_player(+10, 0, 0)).grid(row=2, column=6)
 
 #Down
-tk.Button(controls_frame, text="\/ (1)", command=lambda: move_player(0, -1, 0)).grid(row=4, column=2)
-tk.Button(controls_frame, text="\/ (5)", command=lambda: move_player(0, -5, 0)).grid(row=4, column=3)
-tk.Button(controls_frame, text="\/ (10)", command=lambda: move_player(0, -10, 0)).grid(row=4, column=4)
+tk.Button(controls_frame, text="↓ (1)", command=lambda: move_player(0, -1, 0)).grid(row=4, column=2)
+tk.Button(controls_frame, text="↓ (5)", command=lambda: move_player(0, -5, 0)).grid(row=4, column=3)
+tk.Button(controls_frame, text="↓ (10)", command=lambda: move_player(0, -10, 0)).grid(row=4, column=4)
 
 connect_to_game()
+
+# Start live coordinate updates
+update_live_location()
+
 root.mainloop()
