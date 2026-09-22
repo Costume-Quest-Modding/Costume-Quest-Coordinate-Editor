@@ -1,4 +1,3 @@
-import random
 import pymem
 from pymem import process
 import tkinter as tk
@@ -70,13 +69,6 @@ def follow_pointer_chain(base, offsets):
     address = address + final_offset
     
     return address
-
-def randomize_coordinates():
-    """Randomizes the X, Y, and Z coordinates within a set range."""
-    x = random.uniform(-5000, 5000)  
-    y = random.uniform(-5000, 5000)  
-    z = random.uniform(0, 100)      
-    return x, y, z
 
 def move_player(dx=0, dy=0, dz=0):
     """Move player by a delta offset in memory (dx, dy, dz)."""
@@ -164,6 +156,9 @@ status_label = tk.Label(
 
 status_label.pack(pady=5)
 
+retry_button = tk.Button(root, text="Retry Connection",command=connect_to_game)
+retry_button.pack(pady=5)
+
 live_location_var = tk.StringVar()
 live_location_var.set("Not connected")
 
@@ -193,9 +188,6 @@ entry_z.grid(row=2, column=1, padx=5)
 
 apply_button = tk.Button(root, text="Apply Coordinates", command=apply_manual_coordinates)
 apply_button.pack(pady=5)
-
-retry_button = tk.Button(root, text="Retry Connection",command=connect_to_game)
-retry_button.pack(pady=5)
 
 # Movement controls
 controls_frame = tk.Frame(root)
