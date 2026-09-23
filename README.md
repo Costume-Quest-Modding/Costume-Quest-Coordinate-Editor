@@ -1,8 +1,12 @@
 # Costume-Quest-Coordinate-Editor.
 
-Currently this only works with Mall.
+This program allows editing coordinates for the video game Costume Quest on PC.
 
-Steps to install:
+## Limitations
+- Only Autumn Haven Mall (World 2) is currently supported. Auburn Pines and Fall Valley will be added at a later date.
+- Currently, the program only builds on Windows. If you wish to help change this, feel free to reach out.
+
+## Steps to install:
 1. Create the python environment:
 ```python -m venv .venv```
 
