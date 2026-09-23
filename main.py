@@ -1,3 +1,5 @@
+import ctypes
+from ctypes import wintypes
 import pymem
 from pymem import process
 import tkinter as tk
@@ -6,14 +8,38 @@ import tkinter as tk
 pm = None
 module_base = None
 base_address = None
+game_ended = False
 
 # Base offset for coordinates
 BASE_OFFSET = 0x6903D4
 
+def is_game_running():
+    """Check if the currently connected Cq.exe process is still running."""
+
+    if pm is None:
+        return False
+
+    try:
+        exit_code = wintypes.DWORD()
+
+        result = ctypes.windll.kernel32.GetExitCodeProcess(
+            pm.process_handle,
+            ctypes.byref(exit_code)
+        )
+
+        # GetExitCodeProcess returns 0 if the check itself failed.
+        if result == 0:
+            return False
+
+        # 259 means the process is still running.
+        return exit_code.value == 259
+
+    except Exception:
+        return False
 
 def connect_to_game():
     """Try to connect to Cq.exe."""
-    global pm, module_base, base_address
+    global pm, module_base, base_address, game_ended
 
     try:
         # Try to open the game process
@@ -31,6 +57,7 @@ def connect_to_game():
         base_address = module_base + BASE_OFFSET
 
         status_var.set("Connected - Found Cq.exe")
+        game_ended = False
 
         # Enable controls
         apply_button.config(state=tk.NORMAL)
@@ -45,10 +72,11 @@ def connect_to_game():
         module_base = None
         base_address = None
 
-        status_var.set(
-            "Not Connected - Cq.exe not found"
-            "\n\nStart the Game and click Retry"
-        )
+        if not game_ended:
+            status_var.set(
+                "Not Connected - Cq.exe not found"
+                "\n\nStart the Game and click Retry"
+            )
 
         # Disable controls
         apply_button.config(state=tk.DISABLED)
@@ -174,13 +202,23 @@ def apply_manual_coordinates():
 def update_live_location():
     """Continuously checks for Cq.exe and player coordinates."""
 
-    global pm, module_base, base_address
+    global pm, module_base, base_address, game_ended
 
     # -------------------------------------------------
     # Step 1: Check if we are connected to Cq.exe
     # -------------------------------------------------
 
     if pm is None or base_address is None:
+
+        # If the game just ended, keep the
+        # "Game process ended" message visible.
+        if game_ended:
+            if connect_to_game():
+                live_location_var.set("Waiting for coordinates...")
+                return
+
+            root.after(1000, update_live_location)
+            return
 
         # Cq.exe is not currently connected.
         # Try to find it.
@@ -192,6 +230,33 @@ def update_live_location():
 
     # -------------------------------------------------
     # Step 2: Cq.exe is connected.
+    # Check if the game is still running.
+    # -------------------------------------------------
+
+    if not is_game_running():
+        pm = None
+        module_base = None
+        base_address = None
+        game_ended = True
+
+        status_var.set(
+            "Game process ended"
+            "\n\nStart the Game and click Retry"
+        )
+
+        live_location_var.set("Waiting for game...")
+
+        # Disable controls
+        apply_button.config(state=tk.DISABLED)
+
+        for button in movement_buttons:
+            button.config(state=tk.DISABLED)
+
+        root.after(100, update_live_location)
+        return
+
+    # -------------------------------------------------
+    # Step 3: Cq.exe is connected.
     # Constantly check for the player coordinates.
     # -------------------------------------------------
 
