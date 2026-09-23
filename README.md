@@ -2,6 +2,8 @@
 
 This program allows editing coordinates for the video game Costume Quest on PC.
 
+![CQ PC Save Editor Summary](https://i.imgur.com/rknx5Xj.png)
+
 ## Limitations
 - Only Autumn Haven Mall (World 2) is currently supported. Auburn Pines and Fall Valley will be supported later.
 - Currently, the program only builds on Windows. If you wish to help change this, feel free to reach out.
