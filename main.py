@@ -215,6 +215,7 @@ def update_live_location():
         if game_ended:
             if connect_to_game():
                 live_location_var.set("Waiting for coordinates...")
+                root.after(100, update_live_location)
                 return
 
             root.after(1000, update_live_location)
