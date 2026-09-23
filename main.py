@@ -3,6 +3,7 @@ from ctypes import wintypes
 import pymem
 from pymem import process
 import tkinter as tk
+from tkinter import messagebox
 import os
 import sys
 
@@ -77,7 +78,8 @@ def connect_to_game():
         if not game_ended:
             status_var.set(
                 "Not Connected - Cq.exe not found"
-                "\n\nStart the Game and click Retry"
+                "\n\nStart Costume Quest"
+                "\nThe program will connect automatically."
             )
 
         # Disable controls
@@ -239,7 +241,8 @@ def update_live_location():
 
         status_var.set(
             "Game process ended"
-            "\n\nStart the Game and click Retry"
+            "\n\nStart Costume Quest"
+            "\nThe program will reconnect automatically."
         )
 
         live_location_var.set("Waiting for game...")
@@ -292,10 +295,38 @@ def update_live_location():
     # Run this function again in 100 milliseconds
     root.after(100, update_live_location)
 
+def create_menu(root):
+    menu_bar = tk.Menu(root)
+
+    help_menu = tk.Menu(
+        menu_bar,
+        tearoff=0
+    )
+
+    help_menu.add_command(
+        label="About",
+        command=lambda: messagebox.showinfo(
+            "About",
+            "Costume Quest Coordinate Editor - Alpha Version 1.0.0\n"
+            "Made by: DeathMaster001\n\n"
+            "A coordinate editor for Costume Quest (PC/Steam).\n"
+            "View and edit the player's X, Y, and Z coordinates while the game is running."
+        )
+    )
+
+    menu_bar.add_cascade(
+        label="Help",
+        menu=help_menu
+    )
+
+    root.config(menu=menu_bar)
+
 # GUI Setup
 root = tk.Tk()
 root.title("Costume Quest Coordinate Editor")
 root.geometry("400x400")
+
+create_menu(root)
 
 # Status
 status_var = tk.StringVar()
