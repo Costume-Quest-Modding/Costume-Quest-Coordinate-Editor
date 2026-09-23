@@ -3,6 +3,8 @@ from ctypes import wintypes
 import pymem
 from pymem import process
 import tkinter as tk
+import os
+import sys
 
 # Game process
 pm = None
@@ -86,7 +88,6 @@ def connect_to_game():
 
         return False
 
-
 # List of offsets to navigate to the player position
 offsets = [0xA18, 0x2C, 0x1CC, 0xB8, 0x40]
 
@@ -94,7 +95,6 @@ offsets = [0xA18, 0x2C, 0x1CC, 0xB8, 0x40]
 position_offset_x = 0x0
 position_offset_y = 0x4
 position_offset_z = 0x8
-
 
 def follow_pointer_chain(base, offsets):
     """Follow the pointer chain to the player position."""
@@ -118,7 +118,6 @@ def follow_pointer_chain(base, offsets):
 
     # At the final step, don't read again.
     return address + offsets[-1]
-
 
 def move_player(dx=0, dy=0, dz=0):
     """Move player by a delta offset in memory."""
@@ -163,7 +162,6 @@ def move_player(dx=0, dy=0, dz=0):
     except Exception:
         status_var.set("Connection lost")
 
-
 def apply_manual_coordinates():
     """Apply coordinates typed in manually to memory."""
 
@@ -197,7 +195,6 @@ def apply_manual_coordinates():
 
     except Exception:
         status_var.set("Connection lost")
-
 
 def update_live_location():
     """Continuously checks for Cq.exe and player coordinates."""
@@ -297,9 +294,8 @@ def update_live_location():
 
 # GUI Setup
 root = tk.Tk()
-root.title("Mall Player Coordinate Editor")
+root.title("Costume Quest Coordinate Editor")
 root.geometry("400x400")
-
 
 # Status
 status_var = tk.StringVar()
@@ -312,7 +308,6 @@ status_label = tk.Label(
 
 status_label.pack(pady=5)
 
-
 # Retry Connection
 retry_button = tk.Button(
     root,
@@ -321,7 +316,6 @@ retry_button = tk.Button(
 )
 
 retry_button.pack(pady=5)
-
 
 # Live Location
 live_location_var = tk.StringVar()
@@ -334,11 +328,9 @@ live_location_label = tk.Label(
 
 live_location_label.pack(pady=5)
 
-
 # Coordinate Entry
 frame = tk.Frame(root)
 frame.pack(pady=5)
-
 
 # X
 tk.Label(
@@ -353,7 +345,6 @@ entry_x = tk.Entry(
 
 entry_x.grid(row=0, column=1, padx=5)
 
-
 # Y
 tk.Label(
     frame,
@@ -366,7 +357,6 @@ entry_y = tk.Entry(
 )
 
 entry_y.grid(row=1, column=1, padx=5)
-
 
 # Z
 tk.Label(
@@ -381,7 +371,6 @@ entry_z = tk.Entry(
 
 entry_z.grid(row=2, column=1, padx=5)
 
-
 # Apply Coordinates
 apply_button = tk.Button(
     root,
@@ -392,7 +381,6 @@ apply_button = tk.Button(
 
 apply_button.pack(pady=5)
 
-
 # Movement controls
 controls_frame = tk.Frame(root)
 controls_frame.pack(pady=10)
@@ -400,7 +388,6 @@ controls_frame.pack(pady=10)
 # Store movement buttons so they can all be
 # enabled/disabled when the connection changes.
 movement_buttons = []
-
 
 # Up
 button = tk.Button(
@@ -411,7 +398,6 @@ button = tk.Button(
 button.grid(row=1, column=2)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="↑ (5)",
@@ -420,7 +406,6 @@ button = tk.Button(
 button.grid(row=1, column=3)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="↑ (10)",
@@ -428,7 +413,6 @@ button = tk.Button(
 )
 button.grid(row=1, column=4)
 movement_buttons.append(button)
-
 
 # Left
 button = tk.Button(
@@ -439,7 +423,6 @@ button = tk.Button(
 button.grid(row=2, column=2)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="← (5)",
@@ -448,7 +431,6 @@ button = tk.Button(
 button.grid(row=2, column=1)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="← (10)",
@@ -456,7 +438,6 @@ button = tk.Button(
 )
 button.grid(row=2, column=0)
 movement_buttons.append(button)
-
 
 # Right
 button = tk.Button(
@@ -467,7 +448,6 @@ button = tk.Button(
 button.grid(row=2, column=4)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="→ (5)",
@@ -476,7 +456,6 @@ button = tk.Button(
 button.grid(row=2, column=5)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="→ (10)",
@@ -484,7 +463,6 @@ button = tk.Button(
 )
 button.grid(row=2, column=6)
 movement_buttons.append(button)
-
 
 # Down
 button = tk.Button(
@@ -495,7 +473,6 @@ button = tk.Button(
 button.grid(row=4, column=2)
 movement_buttons.append(button)
 
-
 button = tk.Button(
     controls_frame,
     text="↓ (5)",
@@ -503,7 +480,6 @@ button = tk.Button(
 )
 button.grid(row=4, column=3)
 movement_buttons.append(button)
-
 
 button = tk.Button(
     controls_frame,
@@ -513,13 +489,21 @@ button = tk.Button(
 button.grid(row=4, column=4)
 movement_buttons.append(button)
 
-
 # Try to connect when the program starts
 connect_to_game()
 
-
 # Start live coordinate updates
 update_live_location()
+
+# set icon if available
+BASE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+
+icon_path = os.path.join(BASE_DIR, "icon.ico")
+if os.path.exists(icon_path):
+    try:
+        root.iconbitmap(icon_path)
+    except Exception:
+        pass
 
 # Start Tkinter
 root.mainloop()
